@@ -1,3 +1,5 @@
+use core::task;
+
 use azuqua_core_queue_service::{QueueService, RabbitMQClient, RabbitMQClientConfig};
 
 use lapin::uri::{AMQPAuthority, AMQPQueryString, AMQPScheme, AMQPUri, AMQPUserInfo};
@@ -47,17 +49,23 @@ async fn main() {
     let config = RabbitMQClientConfig::new(heartbeat_period, uri);
     let amqp_client = RabbitMQClient::new(config).await;
 
+    let mut tasks = Vec::new();
     for _ in 0..total_rounds {
         for _ in 0..invokes_per_round {
             // concurrently publish messages
             let c_amqp_client = amqp_client.clone();
-            tokio::spawn(async move {
+            let jh = tokio::spawn(async move {
                 let _ = c_amqp_client
                     .publish_payload_to_queue(RUNTIME_QUEUE.to_string(), "payload".into())
                     .await
                     .expect("Should have published");
             });
+            tasks.push(jh);
         }
         tokio::time::sleep(Duration::from_secs(secs_per_round)).await;
+    }
+
+    for jh in tasks {
+        jh.await.expect("The task being joined has panicked");
     }
 }

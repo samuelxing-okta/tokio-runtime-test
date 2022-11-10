@@ -22,4 +22,8 @@ path = "src/server/bin/exclusive-runtime.rs"
 
 [[bin]]
 name = "client"
-path = "src/client/bin/main.rs"
+path = "src/client/bin/client.rs"
+
+[[bin]]
+name = "test-yield"
+path = "src/client/bin/test-yield-now.rs"
